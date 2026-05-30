@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,6 +18,7 @@ interface QuizPageProps {
 export default function QuizPage({ answers, onAnswer, onComplete, initialQuestion = 0 }: QuizPageProps) {
   const [currentIndex, setCurrentIndex] = useState(initialQuestion);
   const [direction, setDirection] = useState(0); // -1 = backward, 1 = forward
+  const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const totalQuestions = QUESTIONS.length;
   const currentQuestion = QUESTIONS[currentIndex];
@@ -36,38 +37,53 @@ export default function QuizPage({ answers, onAnswer, onComplete, initialQuestio
   const isLastQuestion = currentIndex === totalQuestions - 1;
   const allAnswered = Object.keys(answers).length === totalQuestions;
 
-  const goNext = () => {
-    if (isLastQuestion) return;
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoAdvanceTimer.current) {
+        clearTimeout(autoAdvanceTimer.current);
+      }
+    };
+  }, []);
+
+  const goNext = useCallback(() => {
     setDirection(1);
     setCurrentIndex((prev) => Math.min(prev + 1, totalQuestions - 1));
-  };
+  }, [totalQuestions]);
 
-  const goPrev = () => {
-    if (currentIndex === 0) return;
+  const goPrev = useCallback(() => {
     setDirection(-1);
     setCurrentIndex((prev) => Math.max(prev - 1, 0));
-  };
+  }, []);
 
-  const handleAnswer = (value: number) => {
+  const handleAnswer = useCallback((value: number) => {
     onAnswer(currentQuestion.id, value);
-    // Auto-advance after a short delay
-    setTimeout(() => {
-      if (!isLastQuestion) {
+
+    // Clear any existing auto-advance timer
+    if (autoAdvanceTimer.current) {
+      clearTimeout(autoAdvanceTimer.current);
+      autoAdvanceTimer.current = null;
+    }
+
+    // Auto-advance after a short delay (only if not last question)
+    if (!isLastQuestion) {
+      autoAdvanceTimer.current = setTimeout(() => {
         setDirection(1);
         setCurrentIndex((prev) => Math.min(prev + 1, totalQuestions - 1));
-      }
-    }, 400);
-  };
+        autoAdvanceTimer.current = null;
+      }, 400);
+    }
+  }, [currentQuestion.id, isLastQuestion, onAnswer, totalQuestions]);
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight' && isAnswered) goNext();
+      if (e.key === 'ArrowRight' && isAnswered && !isLastQuestion) goNext();
       if (e.key === 'ArrowLeft') goPrev();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isAnswered, isLastQuestion]);
+  }, [isAnswered, isLastQuestion, goNext, goPrev]);
 
   const slideVariants = {
     enter: (dir: number) => ({

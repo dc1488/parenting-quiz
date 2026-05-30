@@ -61,7 +61,6 @@ function getInitialState(): InitialState {
   const registered = hasRegistered();
 
   if (savedResult && registered) {
-    // User completed quiz AND registered → show result or commitment
     return {
       page: savedCommitment ? 'commitment' : 'result',
       answers: savedAnswers,
@@ -74,7 +73,6 @@ function getInitialState(): InitialState {
   }
 
   if (savedResult && !registered) {
-    // User completed quiz but hasn't registered → show registration
     return {
       page: 'register',
       answers: savedAnswers,
@@ -87,7 +85,6 @@ function getInitialState(): InitialState {
   }
 
   if (progress) {
-    // User has in-progress quiz
     return {
       page: 'landing',
       answers: savedAnswers,
@@ -133,15 +130,12 @@ export default function Home() {
 
   // Handle quiz complete → show sneak peek
   const handleQuizComplete = useCallback(() => {
-    setAnswers((currentAnswers) => {
-      const quizResult = calculateResults(currentAnswers);
-      setResult(quizResult);
-      saveResult(quizResult);
-      setCurrentPage('sneak-peek');
-      return currentAnswers;
-    });
+    const quizResult = calculateResults(answers);
+    setResult(quizResult);
+    saveResult(quizResult);
+    setCurrentPage('sneak-peek');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  }, [answers]);
 
   // Start quiz
   const handleStartQuiz = useCallback(() => {
