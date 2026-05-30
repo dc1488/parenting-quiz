@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import LandingPage from '@/components/quiz/LandingPage';
 import QuizPage from '@/components/quiz/QuizPage';
 import SneakPeekPage from '@/components/quiz/SneakPeekPage';
@@ -21,100 +21,60 @@ import {
   resetAllData,
   hasSavedProgress,
   hasRegistered,
+  saveCurrentQuestion,
   type RegistrationData,
 } from '@/lib/storage';
 
 type AppPage = 'landing' | 'quiz' | 'sneak-peek' | 'register' | 'result' | 'commitment';
 
-interface InitialState {
-  page: AppPage;
-  answers: Record<number, number>;
-  currentQuestion: number;
-  result: QuizResult | null;
-  commitment: string;
-  registration: RegistrationData | null;
-  hasProgress: boolean;
-}
-
 /**
- * Initialize state from localStorage (lazy initializer for useState)
+ * Compute initial page from localStorage (client only)
  */
-function getInitialState(): InitialState {
-  if (typeof window === 'undefined') {
-    return {
-      page: 'landing',
-      answers: {},
-      currentQuestion: 0,
-      result: null,
-      commitment: '',
-      registration: null,
-      hasProgress: false,
-    };
-  }
-
-  const savedAnswers = loadAnswers();
-  const savedQuestion = loadCurrentQuestion();
-  const savedResult = loadResult() as QuizResult | null;
-  const savedCommitment = loadCommitment();
-  const savedRegistration = loadRegistration();
-  const progress = hasSavedProgress();
+function getInitialPage(): AppPage {
+  if (typeof window === 'undefined') return 'landing';
+  const savedResult = loadResult();
   const registered = hasRegistered();
+  const savedCommitment = loadCommitment();
 
   if (savedResult && registered) {
-    return {
-      page: savedCommitment ? 'commitment' : 'result',
-      answers: savedAnswers,
-      currentQuestion: savedQuestion,
-      result: savedResult,
-      commitment: savedCommitment,
-      registration: savedRegistration,
-      hasProgress: progress,
-    };
+    return savedCommitment ? 'commitment' : 'result';
   }
-
   if (savedResult && !registered) {
-    return {
-      page: 'register',
-      answers: savedAnswers,
-      currentQuestion: savedQuestion,
-      result: savedResult,
-      commitment: '',
-      registration: null,
-      hasProgress: progress,
-    };
+    return 'register';
   }
-
-  if (progress) {
-    return {
-      page: 'landing',
-      answers: savedAnswers,
-      currentQuestion: savedQuestion,
-      result: null,
-      commitment: '',
-      registration: null,
-      hasProgress: true,
-    };
-  }
-
-  return {
-    page: 'landing',
-    answers: {},
-    currentQuestion: 0,
-    result: null,
-    commitment: '',
-    registration: null,
-    hasProgress: false,
-  };
+  return 'landing';
 }
 
 export default function Home() {
-  const [currentPage, setCurrentPage] = useState<AppPage>(() => getInitialState().page);
-  const [answers, setAnswers] = useState<Record<number, number>>(() => getInitialState().answers);
-  const [currentQuestion] = useState(() => getInitialState().currentQuestion);
-  const [result, setResult] = useState<QuizResult | null>(() => getInitialState().result);
-  const [commitment, setCommitment] = useState(() => getInitialState().commitment);
-  const [registration, setRegistration] = useState<RegistrationData | null>(() => getInitialState().registration);
-  const [hasProgress] = useState(() => getInitialState().hasProgress);
+  const [currentPage, setCurrentPage] = useState<AppPage>(getInitialPage);
+  const [answers, setAnswers] = useState<Record<number, number>>(() =>
+    typeof window === 'undefined' ? {} : loadAnswers()
+  );
+  const [currentQuestion, setCurrentQuestion] = useState(() =>
+    typeof window === 'undefined' ? 0 : loadCurrentQuestion()
+  );
+  const [result, setResult] = useState<QuizResult | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return loadResult() as QuizResult | null;
+  });
+  const [commitment, setCommitment] = useState(() =>
+    typeof window === 'undefined' ? '' : loadCommitment()
+  );
+  const [registration, setRegistration] = useState<RegistrationData | null>(() =>
+    typeof window === 'undefined' ? null : loadRegistration()
+  );
+  const [hasProgress] = useState(() =>
+    typeof window === 'undefined' ? false : hasSavedProgress()
+  );
+
+  // Key to force QuizPage remount on retake (ensures internal state resets)
+  const [quizKey, setQuizKey] = useState(0);
+
+  // Ref to always have latest answers in handleQuizComplete (avoids stale closure)
+  const answersRef = useRef(answers);
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
 
   // Handle quiz answer
   const handleAnswer = useCallback(
@@ -128,14 +88,22 @@ export default function Home() {
     []
   );
 
+  // Handle quiz question change (persist position)
+  const handleQuestionChange = useCallback((index: number) => {
+    setCurrentQuestion(index);
+    saveCurrentQuestion(index);
+  }, []);
+
   // Handle quiz complete → show sneak peek
+  // Uses answersRef to always read the latest answers (fixes stale closure bug)
   const handleQuizComplete = useCallback(() => {
-    const quizResult = calculateResults(answers);
+    const latestAnswers = answersRef.current;
+    const quizResult = calculateResults(latestAnswers);
     setResult(quizResult);
     saveResult(quizResult);
     setCurrentPage('sneak-peek');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [answers]);
+  }, []);
 
   // Start quiz
   const handleStartQuiz = useCallback(() => {
@@ -169,24 +137,28 @@ export default function Home() {
     saveCommitment(text);
   }, []);
 
-  // Retake quiz
+  // Retake quiz — reset ALL state including currentQuestion
   const handleRetake = useCallback(() => {
     setAnswers({});
     setResult(null);
     setCommitment('');
     setRegistration(null);
+    setCurrentQuestion(0);
     resetAllData();
+    setQuizKey((prev) => prev + 1); // Force QuizPage to fully remount
     setCurrentPage('quiz');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  // Reset everything
+  // Reset everything — back to landing
   const handleReset = useCallback(() => {
     setAnswers({});
     setResult(null);
     setCommitment('');
     setRegistration(null);
+    setCurrentQuestion(0);
     resetAllData();
+    setQuizKey((prev) => prev + 1);
     setCurrentPage('landing');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
@@ -198,9 +170,11 @@ export default function Home() {
       )}
       {currentPage === 'quiz' && (
         <QuizPage
+          key={quizKey}
           answers={answers}
           onAnswer={handleAnswer}
           onComplete={handleQuizComplete}
+          onQuestionChange={handleQuestionChange}
           initialQuestion={currentQuestion}
         />
       )}

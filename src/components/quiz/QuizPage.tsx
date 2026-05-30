@@ -12,10 +12,11 @@ interface QuizPageProps {
   answers: Record<number, number>;
   onAnswer: (questionId: number, value: number) => void;
   onComplete: () => void;
+  onQuestionChange: (index: number) => void;
   initialQuestion?: number;
 }
 
-export default function QuizPage({ answers, onAnswer, onComplete, initialQuestion = 0 }: QuizPageProps) {
+export default function QuizPage({ answers, onAnswer, onComplete, onQuestionChange, initialQuestion = 0 }: QuizPageProps) {
   const [currentIndex, setCurrentIndex] = useState(initialQuestion);
   const [direction, setDirection] = useState(0); // -1 = backward, 1 = forward
   const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -45,6 +46,11 @@ export default function QuizPage({ answers, onAnswer, onComplete, initialQuestio
       }
     };
   }, []);
+
+  // Notify parent when question index changes
+  useEffect(() => {
+    onQuestionChange(currentIndex);
+  }, [currentIndex, onQuestionChange]);
 
   const goNext = useCallback(() => {
     setDirection(1);
