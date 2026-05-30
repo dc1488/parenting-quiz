@@ -1,6 +1,6 @@
 /**
  * localStorage utilities for Parenting 360 Quiz
- * Handles saving/loading quiz progress, results, and commitments
+ * Handles saving/loading quiz progress, results, registration, and commitments
  */
 
 const STORAGE_KEYS = {
@@ -8,7 +8,14 @@ const STORAGE_KEYS = {
   RESULT: "parenting360_result",
   COMMITMENT: "parenting360_commitment",
   CURRENT_QUESTION: "parenting360_current_question",
+  REGISTRATION: "parenting360_registration",
 } as const;
+
+export interface RegistrationData {
+  name: string;
+  email: string;
+  phone: string;
+}
 
 /**
  * Save quiz answers to localStorage
@@ -73,6 +80,28 @@ export function loadResult(): Record<string, unknown> | null {
 }
 
 /**
+ * Save registration data to localStorage
+ */
+export function saveRegistration(data: RegistrationData): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(STORAGE_KEYS.REGISTRATION, JSON.stringify(data));
+}
+
+/**
+ * Load registration data from localStorage
+ */
+export function loadRegistration(): RegistrationData | null {
+  if (typeof window === "undefined") return null;
+  const stored = localStorage.getItem(STORAGE_KEYS.REGISTRATION);
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Save commitment text to localStorage
  */
 export function saveCommitment(commitment: string): void {
@@ -111,4 +140,12 @@ export function hasSavedProgress(): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Check if user has registered
+ */
+export function hasRegistered(): boolean {
+  if (typeof window === "undefined") return false;
+  return !!localStorage.getItem(STORAGE_KEYS.REGISTRATION);
 }

@@ -10,11 +10,13 @@ import {
   getLevelLabel,
   type QuizResult,
 } from '@/lib/quiz-data';
+import type { RegistrationData } from '@/lib/storage';
 import { Copy, RotateCcw, Check, Heart, PenLine } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface CommitmentPageProps {
   result: QuizResult;
+  registration: RegistrationData;
   commitment: string;
   onSaveCommitment: (text: string) => void;
   onReset: () => void;
@@ -22,6 +24,7 @@ interface CommitmentPageProps {
 
 export default function CommitmentPage({
   result,
+  registration,
   commitment: savedCommitment,
   onSaveCommitment,
   onReset,
@@ -49,7 +52,7 @@ export default function CommitmentPage({
   };
 
   const handleCopy = async () => {
-    const summary = generateSummary(result, commitment);
+    const summary = generateSummary(result, registration, commitment);
     try {
       await navigator.clipboard.writeText(summary);
       setCopied(true);
@@ -59,7 +62,6 @@ export default function CommitmentPage({
       });
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = summary;
       document.body.appendChild(textArea);
@@ -147,6 +149,12 @@ export default function CommitmentPage({
                   <h3 className="font-bold text-warm-900">Ringkasan Parenting 360</h3>
                 </div>
 
+                {/* User info */}
+                <div className="p-3 bg-white rounded-lg border border-warm-200 mb-4">
+                  <p className="text-xs font-medium text-warm-500 mb-1">Nama</p>
+                  <p className="text-sm font-semibold text-warm-900">{registration.name}</p>
+                </div>
+
                 {/* Scores */}
                 <div className="space-y-3 mb-5">
                   {result.scores.map((catScore) => (
@@ -229,10 +237,11 @@ export default function CommitmentPage({
 /**
  * Generate a text summary for copying to clipboard
  */
-function generateSummary(result: QuizResult, commitment: string): string {
+function generateSummary(result: QuizResult, registration: RegistrationData, commitment: string): string {
   const lines: string[] = [];
 
   lines.push('🌟 Parenting 360 Quiz - Hasil Saya 🌟\n');
+  lines.push(`Nama: ${registration.name}`);
 
   result.scores.forEach((catScore) => {
     lines.push(

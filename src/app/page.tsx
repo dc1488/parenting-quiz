@@ -3,6 +3,8 @@
 import { useState, useCallback } from 'react';
 import LandingPage from '@/components/quiz/LandingPage';
 import QuizPage from '@/components/quiz/QuizPage';
+import SneakPeekPage from '@/components/quiz/SneakPeekPage';
+import RegistrationPage from '@/components/quiz/RegistrationPage';
 import ResultPage from '@/components/quiz/ResultPage';
 import CommitmentPage from '@/components/quiz/CommitmentPage';
 import { calculateResults, type QuizResult } from '@/lib/quiz-data';
@@ -12,13 +14,17 @@ import {
   loadCurrentQuestion,
   saveResult,
   loadResult,
+  saveRegistration,
+  loadRegistration,
   saveCommitment,
   loadCommitment,
   resetAllData,
   hasSavedProgress,
+  hasRegistered,
+  type RegistrationData,
 } from '@/lib/storage';
 
-type AppPage = 'landing' | 'quiz' | 'result' | 'commitment';
+type AppPage = 'landing' | 'quiz' | 'sneak-peek' | 'register' | 'result' | 'commitment';
 
 interface InitialState {
   page: AppPage;
@@ -26,12 +32,12 @@ interface InitialState {
   currentQuestion: number;
   result: QuizResult | null;
   commitment: string;
+  registration: RegistrationData | null;
   hasProgress: boolean;
 }
 
 /**
- * Helper to initialize state from localStorage (lazy initializer for useState)
- * Only runs on client during first render
+ * Initialize state from localStorage (lazy initializer for useState)
  */
 function getInitialState(): InitialState {
   if (typeof window === 'undefined') {
@@ -41,6 +47,7 @@ function getInitialState(): InitialState {
       currentQuestion: 0,
       result: null,
       commitment: '',
+      registration: null,
       hasProgress: false,
     };
   }
@@ -49,26 +56,45 @@ function getInitialState(): InitialState {
   const savedQuestion = loadCurrentQuestion();
   const savedResult = loadResult() as QuizResult | null;
   const savedCommitment = loadCommitment();
+  const savedRegistration = loadRegistration();
   const progress = hasSavedProgress();
+  const registered = hasRegistered();
 
-  if (savedResult) {
+  if (savedResult && registered) {
+    // User completed quiz AND registered → show result or commitment
     return {
       page: savedCommitment ? 'commitment' : 'result',
       answers: savedAnswers,
       currentQuestion: savedQuestion,
       result: savedResult,
       commitment: savedCommitment,
+      registration: savedRegistration,
+      hasProgress: progress,
+    };
+  }
+
+  if (savedResult && !registered) {
+    // User completed quiz but hasn't registered → show registration
+    return {
+      page: 'register',
+      answers: savedAnswers,
+      currentQuestion: savedQuestion,
+      result: savedResult,
+      commitment: '',
+      registration: null,
       hasProgress: progress,
     };
   }
 
   if (progress) {
+    // User has in-progress quiz
     return {
       page: 'landing',
       answers: savedAnswers,
       currentQuestion: savedQuestion,
       result: null,
       commitment: '',
+      registration: null,
       hasProgress: true,
     };
   }
@@ -79,6 +105,7 @@ function getInitialState(): InitialState {
     currentQuestion: 0,
     result: null,
     commitment: '',
+    registration: null,
     hasProgress: false,
   };
 }
@@ -89,6 +116,7 @@ export default function Home() {
   const [currentQuestion] = useState(() => getInitialState().currentQuestion);
   const [result, setResult] = useState<QuizResult | null>(() => getInitialState().result);
   const [commitment, setCommitment] = useState(() => getInitialState().commitment);
+  const [registration, setRegistration] = useState<RegistrationData | null>(() => getInitialState().registration);
   const [hasProgress] = useState(() => getInitialState().hasProgress);
 
   // Handle quiz answer
@@ -103,13 +131,13 @@ export default function Home() {
     []
   );
 
-  // Handle quiz complete
+  // Handle quiz complete → show sneak peek
   const handleQuizComplete = useCallback(() => {
     setAnswers((currentAnswers) => {
       const quizResult = calculateResults(currentAnswers);
       setResult(quizResult);
       saveResult(quizResult);
-      setCurrentPage('result');
+      setCurrentPage('sneak-peek');
       return currentAnswers;
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -121,17 +149,21 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  // Retake quiz
-  const handleRetake = useCallback(() => {
-    setAnswers({});
-    setResult(null);
-    setCommitment('');
-    resetAllData();
-    setCurrentPage('quiz');
+  // Go to registration from sneak peek
+  const handleGoToRegister = useCallback(() => {
+    setCurrentPage('register');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  // Go to commitment page
+  // Handle registration submit → show full results
+  const handleRegistrationSubmit = useCallback((data: RegistrationData) => {
+    setRegistration(data);
+    saveRegistration(data);
+    setCurrentPage('result');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  // Go to commitment from results
   const handleGoToCommitment = useCallback(() => {
     setCurrentPage('commitment');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -143,11 +175,23 @@ export default function Home() {
     saveCommitment(text);
   }, []);
 
+  // Retake quiz
+  const handleRetake = useCallback(() => {
+    setAnswers({});
+    setResult(null);
+    setCommitment('');
+    setRegistration(null);
+    resetAllData();
+    setCurrentPage('quiz');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   // Reset everything
   const handleReset = useCallback(() => {
     setAnswers({});
     setResult(null);
     setCommitment('');
+    setRegistration(null);
     resetAllData();
     setCurrentPage('landing');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -166,16 +210,24 @@ export default function Home() {
           initialQuestion={currentQuestion}
         />
       )}
-      {currentPage === 'result' && result && (
+      {currentPage === 'sneak-peek' && result && (
+        <SneakPeekPage result={result} onRegister={handleGoToRegister} />
+      )}
+      {currentPage === 'register' && (
+        <RegistrationPage onSubmit={handleRegistrationSubmit} />
+      )}
+      {currentPage === 'result' && result && registration && (
         <ResultPage
           result={result}
+          registration={registration}
           onRetake={handleRetake}
           onCommitment={handleGoToCommitment}
         />
       )}
-      {currentPage === 'commitment' && result && (
+      {currentPage === 'commitment' && result && registration && (
         <CommitmentPage
           result={result}
+          registration={registration}
           commitment={commitment}
           onSaveCommitment={handleSaveCommitment}
           onReset={handleReset}

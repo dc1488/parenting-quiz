@@ -10,15 +10,17 @@ import {
   getLevelColor,
   type QuizResult,
 } from '@/lib/quiz-data';
-import { ArrowRight, RotateCcw, Target } from 'lucide-react';
+import type { RegistrationData } from '@/lib/storage';
+import { ArrowRight, RotateCcw, Target, User } from 'lucide-react';
 
 interface ResultPageProps {
   result: QuizResult;
+  registration: RegistrationData;
   onRetake: () => void;
   onCommitment: () => void;
 }
 
-export default function ResultPage({ result, onRetake, onCommitment }: ResultPageProps) {
+export default function ResultPage({ result, registration, onRetake, onCommitment }: ResultPageProps) {
   return (
     <div className="min-h-screen px-4 py-8">
       <div className="w-full max-w-lg mx-auto">
@@ -33,11 +35,15 @@ export default function ResultPage({ result, onRetake, onCommitment }: ResultPag
             <span className="text-3xl">🎉</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-warm-900 mb-2">
-            Hasil Quiz Anda
+            Hasil Lengkap Anda
           </h1>
           <p className="text-warm-600">
-            Berikut gambaran kesadaran Anda sebagai orang tua
+            Berikut analisa kesadaran Anda sebagai orang tua
           </p>
+          <div className="mt-3 inline-flex items-center gap-2 text-sm text-warm-600 bg-warm-50 px-3 py-1.5 rounded-full">
+            <User className="w-3.5 h-3.5" />
+            <span>{registration.name}</span>
+          </div>
         </motion.div>
 
         {/* Score cards */}
@@ -132,6 +138,28 @@ export default function ResultPage({ result, onRetake, onCommitment }: ResultPag
               </div>
               <div className="text-sm text-warm-700 whitespace-pre-line leading-relaxed">
                 {result.focusRecommendation}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Workshop CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.7 }}
+        >
+          <Card className="border-warm-300 bg-warm-800 text-white shadow-lg mb-8">
+            <CardContent className="p-6">
+              <div className="text-center">
+                <span className="text-3xl mb-3 block">🏡</span>
+                <h3 className="font-bold text-xl mb-2">Parenting 360 Workshop</h3>
+                <p className="text-warm-200 text-sm mb-4 leading-relaxed">
+                  Reconnect · Recharge · Recreate — Workshop untuk menciptakan koneksi sebelum koreksi.
+                </p>
+                <p className="text-warm-300 text-xs">
+                  Kami akan menghubungi <strong className="text-white">{registration.name}</strong> di {registration.email} untuk jadwal sesi.
+                </p>
               </div>
             </CardContent>
           </Card>
