@@ -45,12 +45,17 @@ export async function POST(req: NextRequest) {
       </table>
     `;
 
-    await resend.emails.send({
-      from: process.env.SENDER_EMAIL ?? "onboarding@resend.dev",
+    const { error } = await resend.emails.send({
+      from: "onboarding@resend.dev",
       to: process.env.OWNER_EMAIL!,
       subject: `[Parenting 360] ${name} baru selesaikan quiz`,
       html,
     });
+
+    if (error) {
+      console.error("resend error:", error);
+      return NextResponse.json({ ok: false, error }, { status: 500 });
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {
