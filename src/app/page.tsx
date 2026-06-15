@@ -77,6 +77,12 @@ export default function Home() {
     answersRef.current = answers;
   }, [answers]);
 
+  // Ref to always have latest result in handleRegistrationSubmit (avoids stale closure)
+  const resultRef = useRef(result);
+  useEffect(() => {
+    resultRef.current = result;
+  }, [result]);
+
   // Handle quiz answer
   const handleAnswer = useCallback(
     (questionId: number, value: number) => {
@@ -124,13 +130,15 @@ export default function Home() {
     saveRegistration(data);
     setCurrentPage('result');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    const currentResult = loadResult();
+    const currentResult = resultRef.current;
     if (currentResult) {
       fetch('/api/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ registration: data, result: currentResult }),
-      }).catch(() => {});
+      }).catch((err) => console.error('notify fetch failed:', err));
+    } else {
+      console.error('notify skipped: result is null');
     }
   }, []);
 
