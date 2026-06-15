@@ -63,9 +63,10 @@ export default function Home() {
   const [registration, setRegistration] = useState<RegistrationData | null>(() =>
     typeof window === 'undefined' ? null : loadRegistration()
   );
-  const [hasProgress] = useState(() =>
-    typeof window === 'undefined' ? false : hasSavedProgress()
-  );
+  const [hasProgress, setHasProgress] = useState(false);
+  useEffect(() => {
+    setHasProgress(hasSavedProgress());
+  }, []);
 
   // Key to force QuizPage remount on retake (ensures internal state resets)
   const [quizKey, setQuizKey] = useState(0);
@@ -117,12 +118,20 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  // Handle registration submit → show full results
+  // Handle registration submit → show full results + notify owner
   const handleRegistrationSubmit = useCallback((data: RegistrationData) => {
     setRegistration(data);
     saveRegistration(data);
     setCurrentPage('result');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    const currentResult = loadResult();
+    if (currentResult) {
+      fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ registration: data, result: currentResult }),
+      }).catch(() => {});
+    }
   }, []);
 
   // Go to commitment from results

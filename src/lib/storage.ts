@@ -60,7 +60,7 @@ export function loadCurrentQuestion(): number {
 /**
  * Save quiz result to localStorage
  */
-export function saveResult(result: Record<string, unknown>): void {
+export function saveResult(result: object): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEYS.RESULT, JSON.stringify(result));
 }
