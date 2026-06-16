@@ -215,14 +215,6 @@ export default function ResultPage({ result, registration, onRetake, onCommitmen
           className="space-y-3 pb-8"
         >
           <Button
-            onClick={onCommitment}
-            className="w-full h-14 text-lg font-semibold bg-warm-800 hover:bg-warm-900 text-white rounded-xl shadow-md"
-          >
-            Tulis Komitmen Saya
-            <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
-
-          <Button
             variant="outline"
             onClick={onRetake}
             className="w-full h-12 border-warm-200 text-warm-700 hover:bg-warm-50 rounded-xl"

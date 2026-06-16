@@ -76,7 +76,7 @@ export default function RegistrationPage({ onSubmit }: RegistrationPageProps) {
             <ShieldCheck className="w-7 h-7 text-warm-700" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-warm-900 mb-2">
-            Daftar Sesi Parenting 360
+            Hasil Quiz Parenting 360
           </h1>
           <p className="text-warm-600 leading-relaxed">
             Isi data Anda untuk mendapatkan hasil lengkap, rekomendasi personal, dan akses sesi khusus Parenting 360.
