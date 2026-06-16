@@ -143,24 +143,66 @@ export default function ResultPage({ result, registration, onRetake, onCommitmen
           </Card>
         </motion.div>
 
-        {/* Workshop CTA */}
+        {/* Event CTA */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.7 }}
+          className="mb-8"
         >
-          <Card className="border-warm-300 bg-warm-800 text-white shadow-lg mb-8">
-            <CardContent className="p-6">
-              <div className="text-center">
-                <span className="text-3xl mb-3 block">🏡</span>
-                <h3 className="font-bold text-xl mb-2">Parenting 360 Workshop</h3>
-                <p className="text-warm-200 text-sm mb-4 leading-relaxed">
-                  Reconnect · Recharge · Recreate — Workshop untuk menciptakan koneksi sebelum koreksi.
-                </p>
-                <p className="text-warm-300 text-xs">
-                  Kami akan menghubungi <strong className="text-white">{registration.name}</strong> di {registration.email} untuk jadwal sesi.
-                </p>
+          <Card className="border-warm-200 shadow-lg overflow-hidden">
+            {/* Banner image */}
+            <img
+              src="/event-banner.jpg"
+              alt="Parenting 360: Home Sweet Home"
+              className="w-full object-cover"
+            />
+            <CardContent className="p-6 bg-white">
+              <h3 className="font-bold text-xl text-warm-900 mb-1">
+                Parenting 360: Home Sweet Home
+              </h3>
+              <p className="text-warm-600 text-sm mb-4 italic">
+                A workshop to create connection before correction
+              </p>
+
+              <div className="space-y-2 text-sm text-warm-700 mb-4">
+                <div className="flex items-start gap-2">
+                  <span>📅</span>
+                  <span>Sabtu, 20 Juni 2026</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span>🕙</span>
+                  <span>10.00 – 12.00 WIB</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span>📍</span>
+                  <span>Eltima Corner — Jl. Bangka VIIIA No. B2, Pela Mampang, Mampang Prapatan, Jakarta Selatan</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span>💰</span>
+                  <div>
+                    <p>Rp 175.000,-/orang/sesi</p>
+                    <p>Rp 300.000,-/couple/sesi</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span>🎙️</span>
+                  <div>
+                    <p className="font-semibold text-warm-900">Andy Kertadjajadi</p>
+                    <p className="text-warm-500 text-xs">Fasilitator Mindfulness & Visual Communication</p>
+                  </div>
+                </div>
               </div>
+
+              <a
+                href="https://bit.ly/MFT_360Series_20Jun26"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full h-14 bg-warm-800 hover:bg-warm-900 text-white text-base font-semibold rounded-xl shadow-md flex items-center justify-center gap-2 transition-colors duration-200"
+              >
+                Daftar Event
+                <ArrowRight className="w-5 h-5" />
+              </a>
             </CardContent>
           </Card>
         </motion.div>
@@ -169,7 +211,7 @@ export default function ResultPage({ result, registration, onRetake, onCommitmen
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
+          transition={{ delay: 0.9 }}
           className="space-y-3 pb-8"
         >
           <Button
