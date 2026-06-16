@@ -54,7 +54,7 @@ export default function Home() {
       fetch('/api/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ registration: data, result: currentResult }),
+        body: JSON.stringify({ registration: data, result: currentResult, answers: answersRef.current }),
       }).catch((err) => console.error('notify fetch failed:', err));
     } else {
       console.error('notify skipped: result is null');
