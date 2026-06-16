@@ -3,14 +3,13 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, ArrowRight, RotateCcw } from 'lucide-react';
+import { Heart, ArrowRight } from 'lucide-react';
 
 interface LandingPageProps {
   onStart: () => void;
-  hasProgress: boolean;
 }
 
-export default function LandingPage({ onStart, hasProgress }: LandingPageProps) {
+export default function LandingPage({ onStart }: LandingPageProps) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
       <motion.div
@@ -92,12 +91,6 @@ export default function LandingPage({ onStart, hasProgress }: LandingPageProps) 
             <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
 
-          {hasProgress && (
-            <p className="text-center text-sm text-warm-500 flex items-center justify-center gap-1">
-              <RotateCcw className="w-3 h-3" />
-              Anda memiliki progres tersimpan
-            </p>
-          )}
         </motion.div>
 
         {/* Footer */}

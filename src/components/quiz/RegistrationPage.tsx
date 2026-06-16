@@ -192,7 +192,7 @@ export default function RegistrationPage({ onSubmit }: RegistrationPageProps) {
             onClick={handleSubmit}
             className="w-full h-14 text-lg font-semibold bg-warm-800 hover:bg-warm-900 text-white rounded-xl shadow-md transition-all duration-200 hover:shadow-lg"
           >
-            Lihat Hasil Lengkap
+            Dapatkan Hasil Sekarang
             <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
 

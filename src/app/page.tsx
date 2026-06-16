@@ -3,126 +3,50 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import LandingPage from '@/components/quiz/LandingPage';
 import QuizPage from '@/components/quiz/QuizPage';
-import SneakPeekPage from '@/components/quiz/SneakPeekPage';
 import RegistrationPage from '@/components/quiz/RegistrationPage';
 import ResultPage from '@/components/quiz/ResultPage';
 import CommitmentPage from '@/components/quiz/CommitmentPage';
 import { calculateResults, type QuizResult } from '@/lib/quiz-data';
-import {
-  saveAnswers,
-  loadAnswers,
-  loadCurrentQuestion,
-  saveResult,
-  loadResult,
-  saveRegistration,
-  loadRegistration,
-  saveCommitment,
-  loadCommitment,
-  resetAllData,
-  hasSavedProgress,
-  hasRegistered,
-  saveCurrentQuestion,
-  type RegistrationData,
-} from '@/lib/storage';
+import { type RegistrationData } from '@/lib/storage';
 
-type AppPage = 'landing' | 'quiz' | 'sneak-peek' | 'register' | 'result' | 'commitment';
-
-/**
- * Compute initial page from localStorage (client only)
- */
-function getInitialPage(): AppPage {
-  if (typeof window === 'undefined') return 'landing';
-  const savedResult = loadResult();
-  const registered = hasRegistered();
-  const savedCommitment = loadCommitment();
-
-  if (savedResult && registered) {
-    return savedCommitment ? 'commitment' : 'result';
-  }
-  if (savedResult && !registered) {
-    return 'register';
-  }
-  return 'landing';
-}
+type AppPage = 'landing' | 'quiz' | 'register' | 'result' | 'commitment';
 
 export default function Home() {
   const [currentPage, setCurrentPage] = useState<AppPage>('landing');
   const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [currentQuestion, setCurrentQuestion] = useState(0);
   const [result, setResult] = useState<QuizResult | null>(null);
   const [commitment, setCommitment] = useState('');
   const [registration, setRegistration] = useState<RegistrationData | null>(null);
-  const [hasProgress, setHasProgress] = useState(false);
-  useEffect(() => {
-    setAnswers(loadAnswers());
-    setCurrentQuestion(loadCurrentQuestion());
-    setResult(loadResult() as QuizResult | null);
-    setCommitment(loadCommitment());
-    setRegistration(loadRegistration());
-    setHasProgress(hasSavedProgress());
-    setCurrentPage(getInitialPage());
-  }, []);
-
-  // Key to force QuizPage remount on retake (ensures internal state resets)
   const [quizKey, setQuizKey] = useState(0);
 
-  // Ref to always have latest answers in handleQuizComplete (avoids stale closure)
   const answersRef = useRef(answers);
   useEffect(() => {
     answersRef.current = answers;
   }, [answers]);
 
-  // Ref to always have latest result in handleRegistrationSubmit (avoids stale closure)
   const resultRef = useRef(result);
   useEffect(() => {
     resultRef.current = result;
   }, [result]);
 
-  // Handle quiz answer
-  const handleAnswer = useCallback(
-    (questionId: number, value: number) => {
-      setAnswers((prev) => {
-        const updated = { ...prev, [questionId]: value };
-        saveAnswers(updated);
-        return updated;
-      });
-    },
-    []
-  );
-
-  // Handle quiz question change (persist position)
-  const handleQuestionChange = useCallback((index: number) => {
-    setCurrentQuestion(index);
-    saveCurrentQuestion(index);
+  const handleAnswer = useCallback((questionId: number, value: number) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
   }, []);
 
-  // Handle quiz complete → show sneak peek
-  // Uses answersRef to always read the latest answers (fixes stale closure bug)
   const handleQuizComplete = useCallback(() => {
-    const latestAnswers = answersRef.current;
-    const quizResult = calculateResults(latestAnswers);
+    const quizResult = calculateResults(answersRef.current);
     setResult(quizResult);
-    saveResult(quizResult);
-    setCurrentPage('sneak-peek');
+    setCurrentPage('register');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  // Start quiz
   const handleStartQuiz = useCallback(() => {
     setCurrentPage('quiz');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  // Go to registration from sneak peek
-  const handleGoToRegister = useCallback(() => {
-    setCurrentPage('register');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
-
-  // Handle registration submit → show full results + notify owner
   const handleRegistrationSubmit = useCallback((data: RegistrationData) => {
     setRegistration(data);
-    saveRegistration(data);
     setCurrentPage('result');
     window.scrollTo({ top: 0, behavior: 'smooth' });
     const currentResult = resultRef.current;
@@ -137,39 +61,30 @@ export default function Home() {
     }
   }, []);
 
-  // Go to commitment from results
   const handleGoToCommitment = useCallback(() => {
     setCurrentPage('commitment');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  // Save commitment
   const handleSaveCommitment = useCallback((text: string) => {
     setCommitment(text);
-    saveCommitment(text);
   }, []);
 
-  // Retake quiz — reset ALL state including currentQuestion
   const handleRetake = useCallback(() => {
     setAnswers({});
     setResult(null);
     setCommitment('');
     setRegistration(null);
-    setCurrentQuestion(0);
-    resetAllData();
-    setQuizKey((prev) => prev + 1); // Force QuizPage to fully remount
+    setQuizKey((prev) => prev + 1);
     setCurrentPage('quiz');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  // Reset everything — back to landing
   const handleReset = useCallback(() => {
     setAnswers({});
     setResult(null);
     setCommitment('');
     setRegistration(null);
-    setCurrentQuestion(0);
-    resetAllData();
     setQuizKey((prev) => prev + 1);
     setCurrentPage('landing');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -178,7 +93,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       {currentPage === 'landing' && (
-        <LandingPage onStart={handleStartQuiz} hasProgress={hasProgress} />
+        <LandingPage onStart={handleStartQuiz} />
       )}
       {currentPage === 'quiz' && (
         <QuizPage
@@ -186,12 +101,7 @@ export default function Home() {
           answers={answers}
           onAnswer={handleAnswer}
           onComplete={handleQuizComplete}
-          onQuestionChange={handleQuestionChange}
-          initialQuestion={currentQuestion}
         />
-      )}
-      {currentPage === 'sneak-peek' && result && (
-        <SneakPeekPage result={result} onRegister={handleGoToRegister} />
       )}
       {currentPage === 'register' && (
         <RegistrationPage onSubmit={handleRegistrationSubmit} />
