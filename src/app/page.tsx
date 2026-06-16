@@ -46,26 +46,21 @@ function getInitialPage(): AppPage {
 }
 
 export default function Home() {
-  const [currentPage, setCurrentPage] = useState<AppPage>(getInitialPage);
-  const [answers, setAnswers] = useState<Record<number, number>>(() =>
-    typeof window === 'undefined' ? {} : loadAnswers()
-  );
-  const [currentQuestion, setCurrentQuestion] = useState(() =>
-    typeof window === 'undefined' ? 0 : loadCurrentQuestion()
-  );
-  const [result, setResult] = useState<QuizResult | null>(() => {
-    if (typeof window === 'undefined') return null;
-    return loadResult() as QuizResult | null;
-  });
-  const [commitment, setCommitment] = useState(() =>
-    typeof window === 'undefined' ? '' : loadCommitment()
-  );
-  const [registration, setRegistration] = useState<RegistrationData | null>(() =>
-    typeof window === 'undefined' ? null : loadRegistration()
-  );
+  const [currentPage, setCurrentPage] = useState<AppPage>('landing');
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [result, setResult] = useState<QuizResult | null>(null);
+  const [commitment, setCommitment] = useState('');
+  const [registration, setRegistration] = useState<RegistrationData | null>(null);
   const [hasProgress, setHasProgress] = useState(false);
   useEffect(() => {
+    setAnswers(loadAnswers());
+    setCurrentQuestion(loadCurrentQuestion());
+    setResult(loadResult() as QuizResult | null);
+    setCommitment(loadCommitment());
+    setRegistration(loadRegistration());
     setHasProgress(hasSavedProgress());
+    setCurrentPage(getInitialPage());
   }, []);
 
   // Key to force QuizPage remount on retake (ensures internal state resets)
